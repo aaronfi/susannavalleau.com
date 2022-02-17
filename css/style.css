@@ -1,0 +1,229 @@
+/*hr {
+  border-top: 1px dotted #000;
+  color: #000;
+  background-color: #fff;
+  height: 0px;
+  width:50%;
+}*/
+
+hr {
+/*border: 1px dotted #000; 
+border-style: none none dotted; */
+color: #fff; 
+background-color: #fff; 
+width:70%}
+
+body
+{
+ background: #1f1f1f url(../images/bg.gif) repeat-x top left;
+ font: normal 15px 'calibri','lucida sans',arial;
+ color: #999999;
+}
+
+a {
+ text-decoration:none;
+ /*color: #99FFFF;*/
+ color: #4D6FAC;
+}
+
+a:hover{
+ text-decoration:none;
+ color: #999999;
+}
+
+a#grey {
+ text-decoration:none;
+ color: #999999;
+}
+a:hover#grey{
+ text-decoration:none;
+ color: #7ec864;
+}
+
+a#onpagelinks{
+	font-size: 20px;
+}
+
+p {text-indent: 1.25em;}
+h1 {color:#fff;}
+h2 {
+/*color:#99FFFF;*/
+	color:#fff;
+	letter-spacing:1px;
+	text-decoration:none;
+}
+
+h3{
+color:#fff
+}
+
+b{
+color: #fff;
+}
+
+img#banner{
+	border-style:solid;
+	border-color:#202020  ;
+}
+
+/* note:  background colors are #000 and #202020*/
+#container{
+ margin: 0 auto;
+ height: 100%;
+ width: 900px;
+ border-style:solid;
+ border-width: 8px;
+ border-color: #303030;
+}
+
+td#piccaption{
+color:#fff;
+
+}
+
+/*this site will be divided into
+two containers
+left will include the header, body and menu
+while the right will be the height of all of those*/
+
+
+#right_sub h3{
+ text-align: center;
+}
+
+#header{
+ width:879px;
+ height: 90px;
+ background: url(../images/bg-logo.jpg);
+ background-repeat:no-repeat;
+ background-color: #000000;
+ padding: 5px;
+ border-bottom-style:solid;
+ border-bottom-width: 1px;
+ border-bottom-color: #202020;
+ padding: 30px 10px;
+ border-right-color: #202020;
+ border-right-style: solid;
+ border-right-width: 1px;
+}
+
+#header h1{
+	font: normal 50px Monotype Corsiva, cambria, arial;
+	text-align: right;
+	letter-spacing: 0px;
+	/*color: #cdc9c9; */
+	/*color: #99FFFF; */
+	color: #fff;
+	z-index: 10;
+	margin: 0px;
+	padding: 5px;
+	padding-right:50px;
+	padding-bottom: 0px;
+}
+#header h3 {
+	font: normal 25px Franklin Gothic Medium, calibri;
+	color: #fff; 
+	z-index: 10;
+	margin: 0px;
+	padding: 5px;
+	text-transform: uppercase;
+	text-align: right;
+	padding-right:50px;
+}
+
+#main{
+float: left;
+ width: 879px;
+padding: 5px;
+background-color: #000;
+ border-bottom-style:solid;
+ border-bottom-width: 1px;
+ border-bottom-color: #202020;
+ padding: 30px 10px;
+ border-right-color: #202020;
+ border-right-style: solid;
+ border-right-width: 1px;
+}
+
+td#date {
+	font: bold 25px Monotype Corsiva;
+	background-image:url(../images/date.jpg);
+	background-repeat:no-repeat;
+	text-align:center;
+	vertical-align:top;
+	color: #000;
+	padding-right: 15px;
+}
+td#date h3{
+	font: bold 30px Monotype Corsiva;
+	text-align:center;
+	color: #fff;
+	margin-top: 5px;
+	margin-left: 0px;
+	margin-bottom: -13px;
+}
+td#date h4{
+	font: bold 20px Monotype Corsiva;
+	text-align:center;
+	color: #fff;
+	margin-top: 10px;
+	margin-left: 0px;
+	margin-bottom: -7px;
+
+}
+
+/*td#date h4{
+	font: bold 30px Monotype Corsiva;
+	text-align:center;
+	color: #fff;
+	margin-top: 5px;
+	margin-left: 0px;
+	margin-bottom: -7px;
+}*/
+
+#menu{
+width:900px;
+background-color: #202020;
+padding-bottom: 0px;
+border-bottom-width: 0px;
+font-size: 15px;
+}
+table#menu{
+list-style-type: none;
+margin: 0;
+padding: 0;
+}
+table#menu td{
+text-align: center;
+width: 147;
+}
+
+table#menu td a{
+color: #fff;
+padding: 8px;
+display:block;
+
+}
+table#menu td a:hover{
+background: #000;	
+padding: 8px;
+color: #fff;
+
+}
+
+#footer{
+width:916px;
+margin: 0 auto 20px auto;
+padding: 0px 0px 10px 0px;
+font-size: 0.9em;
+text-align: center;
+background-color: #303030;
+}
+#footer a{
+text-decoration:none;
+color: #999999;
+}
+#footer a:hover{
+text-decoration:none;
+color: #fff;
+}

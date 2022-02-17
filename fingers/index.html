@@ -1,0 +1,36 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Curved Fingers Reminder</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		
+		<script src="js/audio.js" type="text/javascript"></script>	
+		<link rel="stylesheet" href="css/main.css" />
+	</head>
+	<body>
+	
+		<div class="center">
+
+			<h1> <center> Curved Fingers Reminder </center></h1>
+
+			<h2></h2>
+			
+			<p></p>
+			
+			<center>
+                <p><b>Seconds between reminder</b></p>
+                <input id="timeDelta" style="text-align: center;" type="number" min="0" max="300" value="30">
+				
+				<p id="warning" style="color:red;font-style:italic"> &nbsp; </p>
+                
+                <br> <br> <br> 
+                
+                <button id="StartStop" type="button" style="height:50px;width:150px" onclick="startstop();"><b>Start</b></button> 
+			</center>
+			<audio id="sound"></audio>
+			
+		</div>
+		
+	</body>
+</html>
