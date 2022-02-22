@@ -22,26 +22,113 @@
   /*]]>*/
   </style>
 
-  <script type="text/javascript">
-    async function getData () {
-      //try catch block to handle promises and errors
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script defer type="text/javascript">
+      const currentDateTime = moment().add(1, 'days');  // DEBUGGERY:  moment().add(-900, 'days');
+
+      const template = (eventId, description, eventDateTime, location) => {
+        const eventDateTimeDisplay = eventDateTime.format('MMMM D, YYYY, h:mm A');  // e.g. December 8, 2019, 3:00 PM
+        const dateIconMonth = eventDateTime.format('MMM');  // e.g. Dec
+        const dateIconDay = eventDateTime.format('D');  // e.g. 8
+
+        let locationCityState;
+        let locationName = '';
+        let cleanedDescription = description.replaceAll('<html-blob>', '').replaceAll('</html-blob>', '').replaceAll('\n', '<br>');
+
+        const doesDescriptionBeginWithCityState = cleanedDescription.match(/^([a-zA-Z0-9- ]+, [A-Z]{2})(?: |<br>)/);  // e.g. Seattle, WA  e.g. Methuen, MA   e.g. Mercer Island, WA
+        if (doesDescriptionBeginWithCityState) {
+          locationCityState = doesDescriptionBeginWithCityState[1];
+          locationName = location.split(',')[0];
+        } else {
+          locationCityState = location;  // accommodate legacy formatting convention in our older calendar meetings
+          locationName = location;
+        }
+
+        if (doesDescriptionBeginWithCityState) {
+          cleanedDescription = cleanedDescription.replace(/^([a-zA-Z0-9- ]+, [A-Z]{2})(?: |<br>)/, '');
+          cleanedDescription = cleanedDescription.replace(/(?:<a href=".+?">)?\b(https?:\/\/\S+?)(?:<\/a>| |<br>)/, '<a href="$1">More Information</a><br/>');
+          cleanedDescription = `${locationCityState}<br/>${cleanedDescription}`;
+        }
+
+        if (eventDateTime > currentDateTime) {
+          return `
+            <table><tr><td width="50" id="date" height"><h3>${dateIconMonth}</h3><h3>${dateIconDay}</h3></td>
+            <td><b style="color:#fff">${eventDateTimeDisplay}<br />
+            ${locationName}</b><br />
+            </td></tr></table><br /><br/>
+            ${cleanedDescription}<br/><br/>
+          `;
+        } else {
+          if (eventId === '51ugmnlu997vri9suc7o17i6bk') { // this event is malformed / too hard to parse, so we patch it here...
+            locationName = 'Pullman, WA';
+            cleanedDescription = `
+              Washington-Idaho Symphony Concert<br/>
+              <a href="http://www.washingtonidahosymphony.org/index.php/performances-a-events/2012-2013-concert-series">More Information</a><br/>
+              <br/>
+              The Washington-Idaho Symphony performs Brahms' Academic Overture, C.P.E. Bach's Flute Concerto in d minor, and Beethoven's Sixth Symphony.<br/>
+              <br/>
+              March 2, Domey Auditorium, Gladish Center, Pullman, WA<br/>
+              March 3, Clarkston High School, Clarkston, WA
+            `;
+          }
+
+          // TODO add jumpToYear links
+          return `
+            <b style="color:#fff">${eventDateTimeDisplay}<br />${locationName}</b><br/><br/>
+            ${cleanedDescription}<br/><br/>
+          `;
+        }
+    };
+
+    function format(events) {
+      let pastPerformancesContent = [];
+      let upcomingPerformancesContent = [];
+      events.forEach((event) => {
+        const description = event.description;
+        const eventDateTime = moment(event.start.dateTime);
+
+        if (eventDateTime > currentDateTime) {
+          upcomingPerformancesContent.push(template(event.id, description, eventDateTime, event.location));
+        } else {
+          pastPerformancesContent.push(template(event.id, description, eventDateTime, event.location));
+        }
+      });
+
+      upcomingPerformancesContent = upcomingPerformancesContent.join("<br />");
+      pastPerformancesContent = pastPerformancesContent.join("<br />");
+
+      if (upcomingPerformancesContent) {
+        upcomingPerformancesContent += "<br /> <hr /> <br />";
+      }
+      return [upcomingPerformancesContent, pastPerformancesContent];
+    };
+
+    // TODO try a write operation, confirm that it doesn't work...
+
+    async function getCalendarEvents () {
+      let events;
       try {
-        const calendarId = '5docta7e484kuv6vb6f41qetfg@group.calendar.google.com';
-        const myKey = 'AIzaSyDdbu7SXbBwycepSAWB5bEPqmKThnTSQ3U';
+        const calendarId = 't4gvg2pkc00vf9s1o0ch756lu8@group.calendar.google.com';  // 5docta7e484kuv6vb6f41qetfg@group.calendar.google.com';
+        const myKey = 'AIzaSyCrP0rpUyRpb5JWFrhBqyqweL9D3JafMcQ'; // 'AIzaSyDdbu7SXbBwycepSAWB5bEPqmKThnTSQ3U';
         let url = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?key=${myKey}&orderBy=startTime&singleEvents=True`;
 
-        const now = new Date();
-        const nowFormatted = now.toISOString();
-        url += `&timeMin=${nowFormatted}`;
-
-        let apiCall = await fetch(url);
-        let apiResponse = await apiCall.json();
-        console.log(apiResponse)
+        const apiCall = await fetch(url);
+        const apiResponse = await apiCall.json();
+        events = apiResponse.items;
       } catch (error) {
         console.log(error);
       }
+
+      return events.reverse();
     }
-    getData();
+
+    getCalendarEvents().then((events) => {
+      const [upcomingPerformancesContent, pastPerformancesContent] = format(events);
+      document.getElementById('upcoming_performances_content').textContent = '';
+      document.getElementById('upcoming_performances_content').insertAdjacentHTML('afterend', upcomingPerformancesContent);
+      document.getElementById('past_performances_content').textContent = '';
+      document.getElementById('past_performances_content').insertAdjacentHTML('afterend', pastPerformancesContent);
+    });
   </script>
 </head>
 <body>
@@ -100,515 +187,32 @@
         <div class="c2">
           <img src="pics/St.%20Barnabas,%20Bainbridge_long.JPG" alt="" title="Solo recital at St. Barnabas Episcopal Church, Bainbridge Island, WA" height="250" id="banner" border="7" name="banner" /><br />
           Solo recital at St. Barnabas Episcopal Church, Bainbridge Island, WA
-        </div><a name="upcoming" id="upcoming"></a><br />
-
-<div class="c2">
-  <h2>Upcoming Performances</h2>
-</div><br />
-        <br />
-        <br />
-
-        <div class="c2">
-          <img src="pics/with%20the%20Seattle%20Metropolitan%20Chamber%20Orchestra_long.jpg" alt="" title="Susanna plays harpsichord with the Seattle Metropolitan Chamber Orchestra" height="250" id="banner" border="7" name=
-          "banner" /><br />
-          Susanna plays harpsichord with the Seattle Metropolitan Chamber Orchestra<br />
-        </div><a name="past" id="past"></a><br />
-
-  <div class="c2">
-    <h2 class="c4">Past Performances</h2>
-  </div>
-
-        <div class="c2">
-          <a href="#2021" id="onpagelinks" class="c3" name="onpagelinks">2021</a> <a href="#2019" id="onpagelinks" class="c3" name="onpagelinks">2019</a> <a href="#2018" id="onpagelinks" class="c3" name="onpagelinks">2018</a> <a href=
-          "#2017" id="onpagelinks" class="c3" name="onpagelinks">2017</a> <a href="#2016" id="onpagelinks" class="c3" name="onpagelinks">2016</a> <a href="#2015" id="onpagelinks" class="c3" name="onpagelinks">2015</a> <a href="#2014" id=
-          "onpagelinks" class="c3" name="onpagelinks">2014</a> <a href="#2013" id="onpagelinks" class="c3" name="onpagelinks">2013</a> <a href="#2012" id="onpagelinks" class="c3" name="onpagelinks">2012</a> <a href="#2011" id="onpagelinks"
-          class="c3" name="onpagelinks">2011</a> <a href="#2010" id="onpagelinks" name="onpagelinks">2010</a>
         </div>
 
-        <br />
-        <a name="2021"></a><b>May 14, 2021, 7:30 PM<br />
-        Saint Mark's Episcopal Cathedral</b><br />
-        <br />
-        Seattle, WA<br />
-        <a href="https://saintmarks.org/music-arts/music-series/">More Information</a><br />
-        <br />
-        <br />
-        Three of Seattle&rsquo;s finest young organists will take turns performing in this annual concert of appreciation for Capellmeister Johann Sebastian Bach. For the final concert of the 2020-21 Music Series at St. Mark's - and the
-        second All-Bach Concert of the pandemic - join Hannah Byun, Wyatt Smith, Susanna Valleau, and Johann Sebastian for a livestreamed concert of organ favorites from the mighty Flentrop organ of Saint Mark&rsquo;s Cathedral.<br />
-        <br />
-        This concert will be livestreamed from Saint Mark's Episcopal Cathedral - click the "More Information" link above to access the livestream.<br />
-        <br />
-        <a name="2019"></a><br />
-        <b>December 8, 2019, 3:00 PM<br />
-        Trinity Parish Church</b><br />
-        <br />
-        Seattle, WA<br />
-        <a href="https://www.byrdensemble.com/lessonsandcarols">More Information</a><br />
-        <br />
-        Susanna serves as organist for this "Lessons and Carols" service, presented by the Byrd Ensemble and "Allegra" from the Seattle Girls Choir. This performance, based on <i>A Festival of Nine Lessons and Carols</i>&nbsp;made popular
-        by Kings College Chapel, consists of nine readings, each followed by a carol sung by the choir and a few sung with the congregation.<br />
-        <br />
-        Trinity Episcopal Church<br />
-        609 8th Ave.<br />
-        Seattle, WA 89104<br />
-        <br />
-        <br />
-        <b>December 4, 2019, 12:00 PM<br />
-        Plymouth Congregational Church</b><br />
-        <br />
-        Seattle, WA<br />
-        <a href="https://plymouthchurchseattle.org/upload/file_20190927112829/2019-20_fall_music_brochure_final.pdf">More Information</a><br />
-        <br />
-        <br />
-        Susanna kicks off the Advent Organ Recital series on the incredible new Fisk organ at Plymouth Congregational. With a combination of Advent-themed music and standard organ repertoire, this recital will have something for everyone.
-        $10 free-will offering to benefit the Plymouth Friends of Music Fund.<br />
-        <br />
-        Plymouth Congregational Church<br />
-        1217 Sixth Ave<br />
-        Seattle, WA 98101<br />
-        <br />
-        <br />
-        <b>October 18, 2019, 12:00 PM<br />
-        Christ Episcopal Church</b><br />
-        <br />
-        Tacoma, WA<br />
-        <a href="https://christchurchtacoma.org/calendar/category/music/list/">More Information</a><br />
-        <br />
-        <br />
-        Susanna presents the October "Third Fridays at Noon" recital at Christ Church, Tacoma on the renowned and stunning John Brombaugh organ. Her program is centered on the chorale "Allein Gott in Der H&ouml;h sei Ehr" ("All glory be to
-        God on high"), with three settings by J.S. Bach and one by Georg B&ouml;hm, sprinkled among works by Rachel Laurin and Ad Wammes. Come enjoy this free, 40-minute concert!<br />
-        <br />
-        Christ Episcopal Church<br />
-        310 N. K St<br />
-        Tacoma, WA 98403<br />
-        <br />
-        <a name="2018"></a><br />
-        <b>January 20, 2018, 8:00 PM<br />
-        Plymouth Congregational Church</b><br />
-        Seattle, WA<br />
-        <a href="http://www.smcomusic.org/events/" target="_blank">More Information</a><br />
-        <br />
-        Susanna joins the Seattle Metropolitan Chamber Orchestra as they perform Joseph Haydn's "Mass for Troubled Times," Hob. XXII/11 (Nelson Mass), featuring singers from the Choral Arts Northwest. This piece, presented on SMCO's
-        "Journeys of Discovery and Hope" concert, is paired with Gabriela Lena Frank's 21st century masterwork Leyendas.<br />
-        <br />
-        Plymouth Congregational Church<br />
-        1217 Sixth Ave<br />
-        Seattle, WA 98101<br />
-        <a name="2017"></a><br />
-        <b>December 3, 2017, 3:00 PM<br />
-        Trinity Episcopal Parish</b><br />
-        Seattle, WA<br />
-        <a href="http://seattlegirlschoir.org/calendar/lessons-and-carols-with-the-byrd-ensemble/" target="_blank">More Information</a><br />
-        <br />
-        Susanna serves as organist for Lessons and Carols, a traditional Anglican service that pairs readings with exquisite anthems. The Byrd Ensemble joins with the Seattle Girls Choir for this elegant prelude to the holiday
-        season.<br />
-        <br />
-        Trinity Episcopal Church<br />
-        609 8th Ave.<br />
-        Seattle, WA 89104<br />
-        <br />
-        <b>December 1, 2017, 12:00 PM<br />
-        Emmanuel Episcopal Church</b><br />
-        Mercer Island, WA<br />
-        <a href="http://emmanuelmi.org/6980-2/" target="_blank">More Information</a><br />
-        <br />
-        Emmanuel Episcopal Church presents "Soup &amp; Sound," an Advent recital series with a soup lunch provided at 11:30, followed by a concert featuring their delightful Beckerath organ beginning around 12:00. This year, the recitals
-        will be progressive: organ solo the first week, organ duo the second, and organ trio the third. Susanna will present the Organ Solo recital, featuring music from a breadth of time periods and styles. All are welcome to this free
-        event!<br />
-        <br />
-        Emmanuel Episcopal Church<br />
-        4400 86th Avenue SE<br />
-        Mercer Island, WA 98040<br />
-        <br />
-        <b>February 7, 2017, 12:10 PM<br />
-        Trinity Episcopal Church</b><br />
-        Seattle, WA<br />
-        <a href="http://www.trinityseattle.org/arts-calendar.aspx" target="_blank">More Information</a><br />
-        <br />
-        Susanna performs an exciting, accessible concert as part of Trinity's Noontime Organ Recital series.<br />
-        <br />
-        Trinity Episcopal Church<br />
-        609 8th Ave.<br />
-        Seattle, WA 89104<br />
-        <br />
-        <b>January 20, 2017, 12:10 PM<br />
-        Christ Episcopal Church</b><br />
-        Tacoma, WA<br />
-        <a href="http://www.ccptacoma.org/article/48/music-at-christ-church/third-fridays-at-noon" target="_blank">More Information</a><br />
-        <br />
-        Susanna presents a recital on the exquisite Brombaugh organ at Christ Episcopal Church for their monthly "Third Fridays at Noon" concert series. She'll play an exciting array of ancient and modern music, including Portuguese
-        Baroque composer Manuel Coehlo's "Tento do Sexto Tom," J.S. Bach's sixth Trio Sonata, Pamela Decker's "Jesu, dulcis memoria," Daniel Gawthrop's "Four Noble Gases."<br />
-        <br />
-        Christ Episcopal Church<br />
-        310 N K St.<br />
-        Tacoma, WA 98403<br />
-        <a name="2016"></a><br />
-        <b>November 20, 2016, 7:30 PM<br />
-        Trinity Episcopal Church</b><br />
-        Seattle, WA<br />
-        <a href="http://seattlebachchoir.org/events/" target="_blank">More Information</a><br />
-        <br />
-        Susanna will join the Seattle Bach Choir as organist for their "God and Queen" concert. The Seattle Bach Choir is a 40-member chamber choir dedicated to presenting high quality performances of literature not often performed. Works
-        on this concert include Parry's "I Was Glad," Handel's "My Heart is Inditing," J.S. Bach's "Komm, Jesu, Komm," and Bach's "Mass in G Major."<br />
-        <br />
-        Trinity Parish Church<br />
-        609 8th Ave.<br />
-        Seattle, WA 98104<br />
-        <br />
-        <b>September 18, 2016, 2:00 PM<br />
-        Plymouth Congregational Church</b><br />
-        Seattle, WA<br />
-        <a href="http://plymouthchurchseattle.org/about/music-and-the-arts.html" target="_blank">More Information</a><br />
-        <br />
-        Come hear Susanna kick off Plymouth Church's Fall Music Series with an eclectic, approachable concert on the newly built Fisk organ. The repertoire for this concert was picked to display the wide-ranging possibilities of this
-        incredible instrument. Music includes Arvo P&auml;rt's breathtaking "Annum per Annum," J.S. Bach's Sixth Trio Sonata, Pamela Decker's "Jesu, dulcis memoria," Daniel Gawthrop's imaginative "Four Noble Gases," and Charles
-        Tournemire's Epiphany Suite from "L'Orgue Mystique."<br />
-        <br />
-        Plymouth Congregational Church<br />
-        1217 Sixth Ave<br />
-        Seattle, WA 98101<br />
-        <br />
-        <b>February 26, 2016, 7:30 PM<br />
-        First Free Methodist Church</b><br />
-        Seattle, WA<br />
-        <a href="http://psso.org/" target="_blank">More Information</a><br />
-        <br />
-        Susanna joins the Puget Sound Symphony Orchestra as organist for Camille Saint-Sa&euml;ns' brilliant "Organ" Symphony No. 3. Also on the program are Arturo M&aacute;rquez's energetic Danz&oacute;n No. 2 and Maurice Ravel's
-        jazz-influenced Piano Concerto in G.<br />
-        <br />
-        First Free Methodist Church<br />
-        3200 Third Ave W.<br />
-        Seattle, WA 98119<br />
-        <a name="2015"></a><br />
-        <b>November 6, 2015, 7:30 PM<br />
-        Trinity Episcopal Church</b><br />
-        Seattle, WA<br />
-        <a href="http://www.trinityseattle.org/arts-calendar.aspx" target="_blank">More Information</a><br />
-        <br />
-        Susanna will present Trinity Church's annual organ recital on the All Souls Memorial Organ built by Marceau &amp; Associates. Her recital will be engaging for all ages and will feature a diversity in repertoire that will show off
-        the organ's versatility.<br />
-        <br />
-        Trinity Episcopal Church<br />
-        609 Eighth Avenue<br />
-        Seattle, WA 98104<br />
-        <br />
-        <b>September 18, 2015, 12:10 PM<br />
-        Christ Episcopal Church</b><br />
-        Tacoma, WA<br />
-        <a href="http://www.ccptacoma.org/article/48/music-at-christ-church/third-fridays-at-noon" target="_blank">More Information</a><br />
-        <br />
-        Noontime organ recital on the beautiful 2-manual Brombaugh organ, an instrument based on European models from the 17th and 18th centuries. Susanna will be joined with Bob Gale, resident trumpet player of St. Mark's Cathedral,
-        Seattle for this concert. They will play pieces for organ and trumpet composed by Sweelinck, Petr Eben, and Eric Schmidt, and Susanna will play solo works by Rheinberger, Pietro Yon, and Richard Purvis. This recital is part of
-        Christ Church's &ldquo;Third Fridays at Noon&rdquo; concert series performed by organists, pianists, and other musicians.<br />
-        <br />
-        Christ Episcopal Church<br />
-        310 N K St.<br />
-        Tacoma, WA 98403<br />
-        <br />
-        <b>July 22, 2015, 8:00 PM<br />
-        Methuen Memorial Music Hall</b><br />
-        Methuen, MA<br />
-        <a href="http://mmmh.org/1_104_Wednesdays-May-20-thru-August-26-2015-ORGAN-RECITAL-SERIES.html" target="_blank">More Information</a><br />
-        <br />
-        The Methuen Memorial Music Hall houses the United States' first concert organ. The organ, completed in 1863 by E.F. Walcker and Company for the Boston Music Hall, was moved in 1897 to this specially built concert hall. Susanna will
-        present an exciting program as part of the MMMH's Wednesday evening summer recital series. Works by Stanford, Bridge, Purvis, Yon, Weaver, Elmore, Mendelssohn, Gawthrop, and Rheinberger.<br />
-        <br />
-        Methuen Memorial Music Hall<br />
-        192 Broadway (Route 28)<br />
-        Methuen, MA 08144<br />
-        <br />
-        <b>June 30, 2015, 11:30 AM<br />
-        Village Community Presbyterian Church</b><br />
-        San Diego, CA<br />
-        <a href="http://agosandiego2015.org/schedule.html" target="_blank">More Information</a><br />
-        <br />
-        Susanna Valleau and Thomas Mellan will perform in concert on Youth Day at the American Guild of Organists' 2015 West Region Convention. Their concert will include works by Villiers-Stanford, Daniel Gawthrop, Rheinberger, and one of
-        Mellan's own compositions.<br />
-        <br />
-        Village Community Presbyterian Church<br />
-        6225 Paseo Delicias<br />
-        Rancho Santa Fe, CA 92067<br />
-        <br />
-        <b>June 14, 2015, 3:00 PM<br />
-        Green Lake Church of Seventh-day Adventists</b><br />
-        Seattle, WA<br />
-        <a href="http://greenlakesda.org/" target="_blank">More Information</a><br />
-        <br />
-        Susanna Valleau will present a solo recital on the 2012 94-rank Burton K. Tidwell Organ. Susanna will play an eclectic, accessible hour-long program for all ages, including works by Charles Villiers Stanford, Frank Bridge, Richard
-        Purvis, Pietro Yon, Powell Weaver, Robert Elmore, Daniel Gawthrop, and Josef Rheinberger.<br />
-        <br />
-        Greenlake Church of the Seventh Day Adventist<br />
-        6350 E Greenlake Way N<br />
-        Seattle, WA 98103<br />
-        <br />
-        <b>April 19, 2015, 2:00 PM<br />
-        Saint Mark's Episcopal Cathedral</b><br />
-        Seattle, WA<br />
-        <a href="http://www.saintmarks.org/Worship/Arts/concerts1415.pdf" target="_blank">More Information</a><br />
-        <br />
-        St. Mark's resident trumpeter Robert Gale joins Susanna Valleau for this "Organ Plus" concert in the stunning Thomsen Chapel. This diverse concert will include works by Johann Fasch, Mendelssohn, Eben, J.S. Bach, Sweelinck, Daniel
-        Gawthrop, and Eric Schmidt. Suggested donation is $10.<br />
-        <br />
-        St. Mark's Episcopal Cathedral<br />
-        1245 10th Ave E<br />
-        Seattle, WA 98102<br />
-        <a name="2014"></a><br />
-        <b>November 14, 2014, 8:00 PM<br />
-        First Free Methodist Church</b><br />
-        Seattle, WA<br />
-        <a href="http://www.seattlemetropolitanchamberorchestra.com/wp-content/uploads/2014/03/SMCO-2014-15-Season-Brochure.pdf" target="_blank">More Information</a><br />
-        <br />
-        Susanna joins the Seattle Metropolitan Chamber Orchestra to perform Elgar's "Sospiri for Organ, Harp, and Strings." Also on the concert is Bach's "Orchestral Suite No. 1" and Mozart's "Symphony No. 35."<br />
-        <br />
-        First Free Methodist Church<br />
-        3200 3rd Ave W<br />
-        Seattle, WA 98119<br />
-        <br />
-        <b>August 24, 2014, 4:00 PM<br />
-        Church of the Ascension</b><br />
-        Seattle, WA<br />
-        <a href="http://ascensionseattle.org/wp-content/uploads/2013/06/Sundays-at-Ascension-Organ-Concert-Series.pdf" target="_blank">More Information</a><br />
-        <br />
-        Laura Ouimette and Susanna Valleau team up for a duet recital given as part of the Summer Sundays at Ascension concert series. This fun program includes Rimsky-Korsakov's "Procession of the Nobles" from Mlada, Mendelssohn's "Fugue
-        in C Minor," Sousa's "Stars and Stripes Forever," and solos from each performer.<br />
-        <br />
-        Episcopal Church of the Ascension<br />
-        2330 Viewmont Way W<br />
-        Seattle, Washington 98199<br />
-        <br />
-        <b>August 12, 2014, 8:00 PM<br />
-        Old West Church</b><br />
-        Boston, MA<br />
-        <a href="http://oldwestorgansociety.org/summer-series/" target="_blank">More Information</a><br />
-        <br />
-        Susanna plays the famous Charles Fisk organ in Boston's Old West Church as part of the Old West Summer Series. Music of Guilmant, Brahms, Bach, B&ouml;hm, and Lanquetuit.<br />
-        <br />
-        Old West Church<br />
-        131 Cambridge St.<br />
-        Boston, MA 02114<br />
-        <br />
-        <b>April 11, 2014, 7:00 PM<br />
-        St. Michael's Episcopal Cathedral</b><br />
-        Boise, ID<br />
-        <a href="http://www.stmichaelscathedral.org/" target="_blank">More Information</a><br />
-        <br />
-        This hour-long recital is meant to provide a space for personal reflection as the season of Lent draws to a close. Music of Alain, Bach, Brahms, Guilmant, and P&auml;rt will be played on the 3-manual Schlicker organ in the
-        spectacular sanctuary of the Boise Episcopal Cathedral.<br />
-        <br />
-        St. Michael's Episcopal Cathedral<br />
-        518 N 8th St.<br />
-        Boise, ID 83702<br />
-        <br />
-        <b>March 23, 2014, 9:30 PM<br />
-        St. Mark's Episcopal Cathedral</b><br />
-        Seattle, WA<br />
-        <br />
-        Organ recital following the compline service. Service starts at 9:30 PM; recital on the &ldquo;mighty&rdquo; 4-manual Flentrop (1965) will start around 10 PM with works by J.S. Bach, Johannes Brahms, and Alexandre Guilmant.<br />
-        <br />
-        St. Mark&rsquo;s Episcopal Cathedral<br />
-        1245 10th Ave. East<br />
-        Seattle, WA 98102<br />
-        <a name="2013"></a><br />
-        <b>October 18, 2013, 7:30 PM<br />
-        University Presbyterian Church</b><br />
-        Seattle, WA<br />
-        <br />
-        Susanna appears as organist for Arvo P&auml;rt's "Salve Regina" in a choral concert conducted by University of Washington doctoral candidate Johann Van Niekerk. This ethereal choral work was written in 2001 to celebrate the 1150th
-        anniversary of Essen, Germany.<br />
-        <br />
-        University Presbyterian Church<br />
-        4540 15th Ave NE<br />
-        Seattle, WA 98105<br />
-        <br />
-        <b>September 8, 2013, 4:00 PM<br />
-        Church of the Ascension</b><br />
-        Seattle, WA<br />
-        <a href="http://ascensionseattle.org/music-events/" target="_blank">More Information</a><br />
-        <br />
-        This hour-long recital is given as part of the Summer Sundays at Ascension concert series. Music of Alain, Bach, Brahms, B&ouml;hm, and Paulus will be played on the 2-manual Paul Fritts organ.<br />
-        <br />
-        Episcopal Church of the Ascension<br />
-        2330 Viewmont Way W<br />
-        Seattle, Washington 98199<br />
-        <br />
-        <b>August 16, 2013, 12:10 PM<br />
-        Christ Episcopal Church</b><br />
-        Tacoma, WA<br />
-        <a href="http://www.ccptacoma.org/article/48/music-at-christ-church/third-fridays-at-noon" target="_blank">More Information</a><br />
-        <br />
-        Noontime organ recital on the beautiful 2-manual Brombaugh organ, an instrument based on European models from the 17th and 18th centuries. This recital is part of Christ Church's &ldquo;Third Fridays at Noon&rdquo; concert series
-        performed by organists, pianists, and other musicians.<br />
-        <br />
-        Christ Episcopal Church<br />
-        310 N K St.<br />
-        Tacoma, WA 98403<br />
-        <br />
-        <b>July 28, 2013, 9:30 PM<br />
-        St. Mark's Episcopal Cathedral</b><br />
-        Seattle, WA<br />
-        <br />
-        Organ recital following the compline service. Service starts at 9:30 PM; recital on the &ldquo;mighty&rdquo; 4-manual Flentrop (1965) will start around 10 PM with works by J.S. Bach, Arvo P&auml;rt, and Georg B&ouml;hm.<br />
-        <br />
-        St. Mark&rsquo;s Episcopal Cathedral<br />
-        1245 10th Ave. East<br />
-        Seattle, WA 98102<br />
-        <br />
-        <b>June 15, 2013, 7:00 PM<br />
-        Christ Episcopal Church</b><br />
-        Andover, MA<br />
-        Full-Length Recital<br />
-        <a href="http://www.christchurchandover.org/music" target="_blank">More Information</a><br />
-        <br />
-        Solo organ recital celebrating the newly installed C.B. Fisk organ. Music of P&auml;rt, Widor, Bach, Brahms, Tournemire, Beach, Alain, and Demessieux.<br />
-        <br />
-        Christ Episcopal Church<br />
-        25 Central St.<br />
-        Andover, MA 01810<br />
-        <br />
-        <b>June 2, 2013, 5:00 PM<br />
-        Church of the Epiphany</b><br />
-        Seattle, WA<br />
-        <a href="http://www.epiphanyseattle.org/music/" target="_blank">More Information</a><br />
-        <br />
-        Solo organ recital on Epiphany's three-manual organ built by Noack Organ Co. Music of Bach, Brahms, Beach, Alain, P&auml;rt, Widor, and Demessieux.<br />
-        <br />
-        Church of the Epiphany<br />
-        1805 38th Avenue<br />
-        Seattle, WA 98122<br />
-        <br />
-        <b>March 2, 2013, 7:30 PM<br />
-        March 3</b><br />
-        Washington-Idaho Symphony Concert<br />
-        <a href="http://www.washingtonidahosymphony.org/index.php/performances-a-events/2012-2013-concert-series" target="_blank">More Information</a><br />
-        <br />
-        The Washington-Idaho Symphony performs Brahms&rsquo; Academic Overture, C.P.E. Bach&rsquo;s Flute Concerto in d minor, and Beethoven&rsquo;s Sixth Symphony.<br />
-        <br />
-        March 2, Domey Auditorium, Gladish Center, Pullman, WA<br />
-        March 3, Clarkston High School, Clarkston, WA<br />
-        <a name="2012"></a><br />
-        <b>July 18, 2012, 7:30 PM<br />
-        Winchester</b><br />
-        Pipe Organ Encounters<br />
-        <br />
-        Recital given for the students attending Pipe Organ Encounters (POE) at Shenandoah University. Performances by Caroline Robinson, Dorothy VanDine, and Susanna Valleau.<br />
-        <br />
-        First Baptist Church<br />
-        205 W. Piccadilly St.<br />
-        Winchester, VA 22601<br />
-        <br />
-        <b>July 6, 2012, 9:00 AM<br />
-        Nashville</b><br />
-        American Guild of Organists' &ldquo;Rising Stars&rdquo; Recital<br />
-        <br />
-        Joint recital of "rising stars" Susanna Valleau, Kenneth Miller, and Wyatt Smith, 2012 regional winners of the AGO/Quimby Regional Competition for Young Organists. Recitalists play on the 2003 Lively-Fulcher organ as part of the
-        AGO National Convention. Susanna performs Jean Sibelius&rsquo;s Intrada, op. 111a; Amy Beach&rsquo;s Prelude on an Old Folk Tune; Louis Vierne&rsquo;s Scherzetto, op. 31; and Alexandre Guilmant&rsquo;s March on a Theme by
-        Handel.<br />
-        <br />
-        Christ Church Cathedral<br />
-        900 Broadway<br />
-        Nashville, TN 37203<br />
-        <br />
-        <b>May 25, 2012, 7:30 PM<br />
-        Bainbridge Island</b><br />
-        Full-Length Recital<br />
-        <br />
-        Solo recital, presented by the Olympic Peninsula Chapter of the American Guild of Organists and the Arts at St. Barnabas. Works by Sibelius, Smyth, B&ouml;hm, Hindemith, Demessieux, Guilmant, Beach, Vierne, and Widor.<br />
-        <br />
-        St. Barnabas Episcopal Church<br />
-        1187 Wyatt Way NW<br />
-        Bainbridge Island, WA 98110<br />
-        <br />
-        <b>May 14, 2012, 7:30 PM<br />
-        Bellevue</b><br />
-        Full-Length Recital<br />
-        <br />
-        Solo recital given for the Seattle Chapter of the American Guild of Organists.<br />
-        <br />
-        First United Methodist Church<br />
-        1934 108th Ave NE<br />
-        Bellevue, WA 98004<br />
-        <br />
-        <b>May 11, 2012, 8:00 PM<br />
-        Seattle</b><br />
-        Dedication Recital<br />
-        <br />
-        Students of Carole Terry perform a dedication recital on the newly-installed 94-rank Burton K. Tidwell organ.<br />
-        <br />
-        Greenlake Church of the Seventh-Day Adventist<br />
-        6350 E Green Lake Way N<br />
-        Seattle, WA 98103<br />
-        <br />
-        <a name="2011"></a><br />
-        <b>November 20, 2011, 3:00 PM<br />
-        Seattle</b><br />
-        Masters Recital<br />
-        <br />
-        Solo recital on the "mighty" 4-manual Flentrop organ. Music of Sibelius, Smyth, Bach, Tournemire, Hindemith, and Demessieux.<br />
-        <br />
-        St. Mark&rsquo;s Episcopal Cathedral<br />
-        1245 10th Ave. East<br />
-        Seattle, WA 98102<br />
-        <br />
-        <b>August 26, 2011, 12:00 PM<br />
-        Spanaway</b><br />
-        Noontime recital<br />
-        <br />
-        Recital given on the unaltered 1905 organ built by Jesse Woodbury &amp; Co. (Opus 225), as part of the Fourth Fridays at Noon concert series.<br />
-        <br />
-        Spanaway Lutheran Church<br />
-        16001 A Street S.<br />
-        Spanaway, WA 98387<br />
-        <br />
-        <b>July 26, 2011, 7:30 PM<br />
-        Boston</b><br />
-        Pipe Organ Encounters<br />
-        <br />
-        Recital given for the students attending Pipe Organ Encounters (POE) Advanced and Technical in Boston, MA. Christopher Gage, Ray Nagem, Kevin Neel, Caroline Robinson, and Susanna Valleau share this recital on the renowned C.B. Fisk
-        organ (Opus 55).<br />
-        <br />
-        Old West Church<br />
-        131 Cambridge St.<br />
-        Boston, MA 02114<br />
-        <br />
-        <b>July 5, 2011, 5:00 PM<br />
-        Boise</b><br />
-        Regional Competition of Young Organists Winner&rsquo;s Recital, AGO Regional Convention<br />
-        <br />
-        Susanna Valleau performs works by Bach, Mendelssohn, Tournemire, and Demessieux on the 1960 Aeolian-Skinner Organ.<br />
-        <br />
-        Cathedral of the Rockies<br />
-        717 N 11th St.<br />
-        Boise, ID 83702<br />
-        <br />
-        <b>February 28, 2011, 7:30 PM<br />
-        Seattle</b><br />
-        &ldquo;Baroque Celebration&rdquo; with the Seattle Metropolitan Chamber Orchestra<br />
-        <br />
-        Susanna Valleau plays harpsichord with the Seattle Metropolitan Chamber Orchestra.<br />
-        <br />
-        Meany Hall for the Performing Arts<br />
-        Seattle, WA 98105<br />
-        <br />
-        <b>February 9, 2011, 12:00 PM<br />
-        Seattle</b><br />
-        Lunchtime Organ Recital<br />
-        <br />
-        Works by Mendelssohn, Buxtehude, Alain, and Bach.<br />
-        <br />
-        Trinity Episcopal Church<br />
-        609 8th Ave.<br />
-        Seattle, WA 98104<br />
-        <a name="2010"></a><br />
-        <b>May 30, 2010, 8:00 PM<br />
-        Appleton</b><br />
-        Senior Recital<br />
-        <br />
-        Works by Bach, Handel, Mendelssohn, Dupr&eacute;, Alain, and Buxtehude.<br />
-        <br />
-        Lawrence University Memorial Chapel<br />
-        510 E. College Ave.<br />
-        Appleton, WI 54911<br />
-        <br />
+        <a name="upcoming" id="upcoming"></a><br />
+        <div class="c2">
+          <h2>Upcoming Performances</h2>
+        </div>
+
+        <br /><br /><br />
+        <span id="upcoming_performances_content">Loading...</span>
+
+        <div class="c2">
+          <img src="pics/with%20the%20Seattle%20Metropolitan%20Chamber%20Orchestra_long.jpg" alt="" title="Susanna plays harpsichord with the Seattle Metropolitan Chamber Orchestra" height="250" id="banner" border="7" name="banner" />
+          <br />Susanna plays harpsichord with the Seattle Metropolitan Chamber Orchestra<br />
+        </div>
+        <a name="past" id="past"></a>
+        <br />
+
+        <div class="c2">
+          <h2 class="c4">Past Performances</h2>
+        </div>
+
+        <span id="past_performances_content">Loading...</span>
+
+        <div class="c2">
+          <a href="#2021" id="onpagelinks" class="c3" name="onpagelinks">2021</a> <a href="#2019" id="onpagelinks" class="c3" name="onpagelinks">2019</a> <a href="#2018" id="onpagelinks" class="c3" name="onpagelinks">2018</a> <a href="#2017" id="onpagelinks" class="c3" name="onpagelinks">2017</a> <a href="#2016" id="onpagelinks" class="c3" name="onpagelinks">2016</a> <a href="#2015" id="onpagelinks" class="c3" name="onpagelinks">2015</a> <a href="#2014" id="onpagelinks" class="c3" name="onpagelinks">2014</a> <a href="#2013" id="onpagelinks" class="c3" name="onpagelinks">2013</a> <a href="#2012" id="onpagelinks" class="c3" name="onpagelinks">2012</a> <a href="#2011" id="onpagelinks" class="c3" name="onpagelinks">2011</a> <a href="#2010" id="onpagelinks" name="onpagelinks">2010</a>
+        </div>
       </div>
 
       <div class="c5"></div>
