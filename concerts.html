@@ -1,5 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -13,76 +13,82 @@
   <link rel="stylesheet" type="text/css" href="css/style.css" />
   <link rel="shortcut icon" href="favicon.ico" />
   <style type="text/css">
-/*<![CDATA[*/
-  div.c5 {clear: both;}
-  h2.c4 {margin-bottom: 5px;}
-  a.c3 {padding-right:50px;}
-  div.c2 {text-align: center}
-  h2.c1 {margin-bottom: 8px;}
-  /*]]>*/
+    /*<![CDATA[*/
+    div.c5 {clear: both;}
+    h2.c4 {margin-bottom: 5px;}
+    a.c3 {padding-right:50px;}
+    div.c2 {text-align: center}
+    h2.c1 {margin-bottom: 8px;}
+    #past_performances_named_anchors {display: flex; flex-wrap: wrap; justify-content: center; padding-left: 20px; padding-right: 20px; }
+    #past_performances_named_anchors > *:not(:last-child) {padding-right: 50px;}
+    /*]]>*/
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"
+          type="text/javascript">
+  </script>
+  <script defer="defer" type="text/javascript">
+    //<![CDATA[
+    const currentDateTime = moment().add(1, 'days');  // DEBUGGERY:  moment().add(-900, 'days');
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script defer type="text/javascript">
-      const currentDateTime = moment().add(1, 'days');  // DEBUGGERY:  moment().add(-900, 'days');
+    const template = (eventId, description, eventDateTime, location) => {
+      const eventDateTimeDisplay = eventDateTime.format('MMMM D, YYYY, h:mm A');  // e.g. December 8, 2019, 3:00 PM
+      const dateIconMonth = eventDateTime.format('MMM');  // e.g. Dec
+      const dateIconDay = eventDateTime.format('D');  // e.g. 8
 
-      const template = (eventId, description, eventDateTime, location) => {
-        const eventDateTimeDisplay = eventDateTime.format('MMMM D, YYYY, h:mm A');  // e.g. December 8, 2019, 3:00 PM
-        const dateIconMonth = eventDateTime.format('MMM');  // e.g. Dec
-        const dateIconDay = eventDateTime.format('D');  // e.g. 8
+      let locationCityState;
+      let locationName = '';
+      let cleanedDescription = description.replaceAll('<html-blob>', '').replaceAll('<\/html-blob>', '').replaceAll('\n', '<br>');
 
-        let locationCityState;
-        let locationName = '';
-        let cleanedDescription = description.replaceAll('<html-blob>', '').replaceAll('</html-blob>', '').replaceAll('\n', '<br>');
+      const doesDescriptionBeginWithCityState = cleanedDescription.match(/^([a-zA-Z0-9- ]+, [A-Z]{2})(?: |<br>)/);  // e.g. Seattle, WA  e.g. Methuen, MA   e.g. Mercer Island, WA
+      if (doesDescriptionBeginWithCityState) {
+        locationCityState = doesDescriptionBeginWithCityState[1];
+        locationName = location.split(',')[0];
+      } else {
+        locationCityState = location;  // accommodate legacy formatting convention in our older calendar meetings
+        locationName = location;
+      }
 
-        const doesDescriptionBeginWithCityState = cleanedDescription.match(/^([a-zA-Z0-9- ]+, [A-Z]{2})(?: |<br>)/);  // e.g. Seattle, WA  e.g. Methuen, MA   e.g. Mercer Island, WA
-        if (doesDescriptionBeginWithCityState) {
-          locationCityState = doesDescriptionBeginWithCityState[1];
-          locationName = location.split(',')[0];
-        } else {
-          locationCityState = location;  // accommodate legacy formatting convention in our older calendar meetings
-          locationName = location;
-        }
+      if (doesDescriptionBeginWithCityState) {
+        cleanedDescription = cleanedDescription.replace(/^([a-zA-Z0-9- ]+, [A-Z]{2})(?: |<br>)/, '');
+        cleanedDescription = cleanedDescription.replace(/(?:<a href=".+?">)?\b(https?:\/\/\S+?)(?:<\/a>| |<br>)/, '<a href="$1">More Information<\/a><br/>');
+        cleanedDescription = `${locationCityState}<br/>${cleanedDescription}`;
+      }
 
-        if (doesDescriptionBeginWithCityState) {
-          cleanedDescription = cleanedDescription.replace(/^([a-zA-Z0-9- ]+, [A-Z]{2})(?: |<br>)/, '');
-          cleanedDescription = cleanedDescription.replace(/(?:<a href=".+?">)?\b(https?:\/\/\S+?)(?:<\/a>| |<br>)/, '<a href="$1">More Information</a><br/>');
-          cleanedDescription = `${locationCityState}<br/>${cleanedDescription}`;
-        }
-
-        if (eventDateTime > currentDateTime) {
-          return `
-            <table><tr><td width="50" id="date" height"><h3>${dateIconMonth}</h3><h3>${dateIconDay}</h3></td>
+      if (eventDateTime > currentDateTime) {
+        return `
+            <table><tr><td width="50" id="date" height"><h3>${dateIconMonth}<\/h3><h3>${dateIconDay}<\/h3><\/td>
             <td><b style="color:#fff">${eventDateTimeDisplay}<br />
-            ${locationName}</b><br />
-            </td></tr></table><br /><br/>
+            ${locationName}<\/b><br />
+            <\/td><\/tr><\/table><br /><br/>
             ${cleanedDescription}<br/><br/>
           `;
-        } else {
-          if (eventId === '51ugmnlu997vri9suc7o17i6bk') { // this event is malformed / too hard to parse, so we patch it here...
-            locationName = 'Pullman, WA';
-            cleanedDescription = `
+      } else {
+        if (eventId === '51ugmnlu997vri9suc7o17i6bk') { // this event is malformed / too hard to parse, so we patch it here...
+          locationName = 'Pullman, WA';
+          cleanedDescription = `
               Washington-Idaho Symphony Concert<br/>
-              <a href="http://www.washingtonidahosymphony.org/index.php/performances-a-events/2012-2013-concert-series">More Information</a><br/>
+              <a href="http://www.washingtonidahosymphony.org/index.php/performances-a-events/2012-2013-concert-series">More Information<\/a><br/>
               <br/>
               The Washington-Idaho Symphony performs Brahms' Academic Overture, C.P.E. Bach's Flute Concerto in d minor, and Beethoven's Sixth Symphony.<br/>
               <br/>
               March 2, Domey Auditorium, Gladish Center, Pullman, WA<br/>
               March 3, Clarkston High School, Clarkston, WA
             `;
-          }
+        }
 
-          // TODO add jumpToYear links
-          return `
-            <b style="color:#fff">${eventDateTimeDisplay}<br />${locationName}</b><br/><br/>
+        return `
+            <b style="color:#fff">${eventDateTimeDisplay}<br />${locationName}<\/b><br/><br/>
             ${cleanedDescription}<br/><br/>
           `;
-        }
+      }
     };
 
     function format(events) {
       let pastPerformancesContent = [];
       let upcomingPerformancesContent = [];
+      let pastPerformancesNamedAnchorsContent = '';
+      let knownYears = new Set();
+
       events.forEach((event) => {
         const description = event.description;
         const eventDateTime = moment(event.start.dateTime);
@@ -90,7 +96,16 @@
         if (eventDateTime > currentDateTime) {
           upcomingPerformancesContent.push(template(event.id, description, eventDateTime, event.location));
         } else {
-          pastPerformancesContent.push(template(event.id, description, eventDateTime, event.location));
+          let content = template(event.id, description, eventDateTime, event.location);
+
+          const year = eventDateTime.year();
+          if (! knownYears.has(year)) {
+            knownYears.add(year);
+            pastPerformancesNamedAnchorsContent += `<a href="#${year}" id="onpagelinks">${year}<\/a>`;
+            content = `<a name="${year}"><\/a>${content}`;
+          }
+
+          pastPerformancesContent.push(content);
         }
       });
 
@@ -100,10 +115,8 @@
       if (upcomingPerformancesContent) {
         upcomingPerformancesContent += "<br /> <hr /> <br />";
       }
-      return [upcomingPerformancesContent, pastPerformancesContent];
+      return [upcomingPerformancesContent, pastPerformancesContent, pastPerformancesNamedAnchorsContent];
     };
-
-    // TODO try a write operation, confirm that it doesn't work...
 
     async function getCalendarEvents () {
       let events;
@@ -123,17 +136,20 @@
     }
 
     getCalendarEvents().then((events) => {
-      const [upcomingPerformancesContent, pastPerformancesContent] = format(events);
+      const [upcomingPerformancesContent, pastPerformancesContent, pastPerformancesNamedAnchorsContent] = format(events);
       document.getElementById('upcoming_performances_content').textContent = '';
       document.getElementById('upcoming_performances_content').insertAdjacentHTML('afterend', upcomingPerformancesContent);
       document.getElementById('past_performances_content').textContent = '';
       document.getElementById('past_performances_content').insertAdjacentHTML('afterend', pastPerformancesContent);
+      document.getElementById('past_performances_named_anchors').insertAdjacentHTML('afterbegin', pastPerformancesNamedAnchorsContent);
     });
+    //]]>
   </script>
 </head>
+
 <body>
-  <script type="text/javascript">
-//<![CDATA[
+<script type="text/javascript">
+  //<![CDATA[
 
   var _gaq = _gaq || [];
   _gaq.push(['_setAccount', 'UA-39112070-1']);
@@ -146,83 +162,77 @@
   })();
 
   //]]>
-  </script>
+</script>
 
-  <div id="container">
-    <div id="left_sub">
-      <div id="header">
-        <h1><a href="index.html">Susanna Valleau</a></h1>
+<div id="container">
+  <div id="left_sub">
+    <div id="header">
+      <h1><a href="index.html">Susanna Valleau</a></h1>
 
-        <h3>Concert Organist</h3>
+      <h3>Concert Organist</h3>
+    </div>
+
+    <div id="menu">
+      <table id="menu">
+        <tr>
+          <td><a href="index.html">Home</a></td>
+
+          <td><a href="biography.html">Biography</a></td>
+
+          <td><a href="concerts.html">Concerts</a></td>
+
+          <td><a href="recordings.html">Recordings</a></td>
+
+          <td><a href="repertoire.html">Repertoire</a></td>
+
+          <td><a href="contact.html">Contact Susanna</a></td>
+        </tr>
+      </table>
+    </div>
+
+    <div id="main">
+      <div class="c2">
+        <h2 class="c1">Concerts</h2>
       </div>
 
-      <div id="menu">
-        <table id="menu">
-          <tr>
-            <td><a href="index.html">Home</a></td>
+      <div class="c2">
+        <a href="#upcoming" id="onpagelinks" class="c3" name="onpagelinks">Upcoming Performances</a> <a href="#past" id="onpagelinks" name="onpagelinks">Past Performances</a>
+      </div><br />
+      <br />
 
-            <td><a href="biography.html">Biography</a></td>
+      <div class="c2">
+        <img src="pics/St.%20Barnabas,%20Bainbridge_long.JPG" alt="" title="Solo recital at St. Barnabas Episcopal Church, Bainbridge Island, WA" height="250" id="banner" border="7" name="banner" /><br />
+        Solo recital at St. Barnabas Episcopal Church, Bainbridge Island, WA
+      </div><a name="upcoming" id="upcoming"></a><br />
 
-            <td><a href="concerts.html">Concerts</a></td>
+      <div class="c2">
+        <h2>Upcoming Performances</h2>
+      </div><br />
+      <br />
+      <br />
+      <span id="upcoming_performances_content">Loading...</span>
 
-            <td><a href="recordings.html">Recordings</a></td>
+      <div class="c2">
+        <img src="pics/with%20the%20Seattle%20Metropolitan%20Chamber%20Orchestra_long.jpg" alt="" title="Susanna plays harpsichord with the Seattle Metropolitan Chamber Orchestra" height="250" id="banner" border="7" name="banner" /><br />
+        Susanna plays harpsichord with the Seattle Metropolitan Chamber Orchestra<br />
+      </div><a name="past" id="past"></a><br />
 
-            <td><a href="repertoire.html">Repertoire</a></td>
-
-            <td><a href="contact.html">Contact Susanna</a></td>
-          </tr>
-        </table>
+      <div class="c2">
+        <h2 class="c4">Past Performances</h2>
       </div>
 
-      <div id="main">
-        <div class="c2">
-          <h2 class="c1">Concerts</h2>
-        </div>
-
-        <div class="c2">
-          <a href="#upcoming" id="onpagelinks" class="c3" name="onpagelinks">Upcoming Performances</a> <a href="#past" id="onpagelinks" name="onpagelinks">Past Performances</a>
-        </div><br />
-        <br />
-
-        <div class="c2">
-          <img src="pics/St.%20Barnabas,%20Bainbridge_long.JPG" alt="" title="Solo recital at St. Barnabas Episcopal Church, Bainbridge Island, WA" height="250" id="banner" border="7" name="banner" /><br />
-          Solo recital at St. Barnabas Episcopal Church, Bainbridge Island, WA
-        </div>
-
-        <a name="upcoming" id="upcoming"></a><br />
-        <div class="c2">
-          <h2>Upcoming Performances</h2>
-        </div>
-
-        <br /><br /><br />
-        <span id="upcoming_performances_content">Loading...</span>
-
-        <div class="c2">
-          <img src="pics/with%20the%20Seattle%20Metropolitan%20Chamber%20Orchestra_long.jpg" alt="" title="Susanna plays harpsichord with the Seattle Metropolitan Chamber Orchestra" height="250" id="banner" border="7" name="banner" />
-          <br />Susanna plays harpsichord with the Seattle Metropolitan Chamber Orchestra<br />
-        </div>
-        <a name="past" id="past"></a>
-        <br />
-
-        <div class="c2">
-          <h2 class="c4">Past Performances</h2>
-        </div>
-
-        <span id="past_performances_content">Loading...</span>
-
-        <div class="c2">
-          <a href="#2021" id="onpagelinks" class="c3" name="onpagelinks">2021</a> <a href="#2019" id="onpagelinks" class="c3" name="onpagelinks">2019</a> <a href="#2018" id="onpagelinks" class="c3" name="onpagelinks">2018</a> <a href="#2017" id="onpagelinks" class="c3" name="onpagelinks">2017</a> <a href="#2016" id="onpagelinks" class="c3" name="onpagelinks">2016</a> <a href="#2015" id="onpagelinks" class="c3" name="onpagelinks">2015</a> <a href="#2014" id="onpagelinks" class="c3" name="onpagelinks">2014</a> <a href="#2013" id="onpagelinks" class="c3" name="onpagelinks">2013</a> <a href="#2012" id="onpagelinks" class="c3" name="onpagelinks">2012</a> <a href="#2011" id="onpagelinks" class="c3" name="onpagelinks">2011</a> <a href="#2010" id="onpagelinks" name="onpagelinks">2010</a>
-        </div>
-      </div>
-
-      <div class="c5"></div>
+      <div class="c2" id="past_performances_named_anchors"></div><br />
+      <span id="past_performances_content">Loading...</span>
     </div>
 
     <div class="c5"></div>
   </div>
 
-  <div id="footer">
-    <a href="mailto:susanna.valleau@gmail.com">susanna.valleau@gmail.com</a> | (206) 486-2801
-  </div>
+  <div class="c5"></div>
+</div>
+
+<div id="footer">
+  <a href="mailto:susanna.valleau@gmail.com">susanna.valleau@gmail.com</a> | (206) 486-2801
+</div>
 </body>
 </html>
