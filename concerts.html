@@ -30,7 +30,7 @@
     //<![CDATA[
     const currentDateTime = moment().add(1, 'days');  // DEBUGGERY:  moment().add(-900, 'days');
 
-    const template = (eventId, description, eventDateTime, location) => {
+    const template = (eventId, description, eventDateTime, location = '') => {
       const eventDateTimeDisplay = eventDateTime.format('MMMM D, YYYY, h:mm A');  // e.g. December 8, 2019, 3:00 PM
       const dateIconMonth = eventDateTime.format('MMM');  // e.g. Dec
       const dateIconDay = eventDateTime.format('D');  // e.g. 8
