@@ -56,11 +56,9 @@
 
       if (eventDateTime > currentDateTime) {
         return `
-            <table><tr><td width="50" id="date" height"><h3>${dateIconMonth}<\/h3><h3>${dateIconDay}<\/h3><\/td>
-            <td><b style="color:#fff">${eventDateTimeDisplay}<br />
-            ${locationName}<\/b><br />
-            <\/td><\/tr><\/table><br /><br/>
-            ${cleanedDescription}<br/><br/>
+            <table style="float: left;"><tr><td id="date"><h3>${dateIconMonth}<\/h3><h3>${dateIconDay}<\/h3><\/td>
+            <\/tr><\/table><b style="color:#fff">${eventDateTimeDisplay}<br />
+            ${locationName}<\/b><br />${cleanedDescription}
           `;
       } else {
         if (eventId === '51ugmnlu997vri9suc7o17i6bk') { // this event is malformed / too hard to parse, so we patch it here...
@@ -109,11 +107,11 @@
         }
       });
 
-      upcomingPerformancesContent = upcomingPerformancesContent.join("<br />");
+      upcomingPerformancesContent = upcomingPerformancesContent.join("<br /><br /> <hr /> <br />");
       pastPerformancesContent = pastPerformancesContent.join("<br />");
 
       if (upcomingPerformancesContent) {
-        upcomingPerformancesContent += "<br /> <hr /> <br />";
+        upcomingPerformancesContent += "<br /><br /><br />";
       }
       return [upcomingPerformancesContent, pastPerformancesContent, pastPerformancesNamedAnchorsContent];
     };
@@ -208,9 +206,7 @@
       <div class="c2">
         <h2>Upcoming Performances</h2>
       </div><br />
-      <br />
-      <br />
-      <span id="upcoming_performances_content">Loading...</span>
+      <span id="upcoming_performances_content">Loading...</span><br />
 
       <div class="c2">
         <img src="pics/with%20the%20Seattle%20Metropolitan%20Chamber%20Orchestra_long.jpg" alt="" title="Susanna plays harpsichord with the Seattle Metropolitan Chamber Orchestra" height="250" id="banner" border="7" name="banner" /><br />
