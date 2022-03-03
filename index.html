@@ -20,6 +20,97 @@
     img.c1 {float:right}
     /*]]>*/
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"
+          type="text/javascript">
+  </script>
+  <script defer="defer" type="text/javascript">
+    //<![CDATA[
+    const currentDateTime = moment();  // DEBUGGERY:  moment().add(-900, 'days');
+
+    const template = (eventId, description, eventDateTime, location = '') => {
+      const eventDateTimeDisplay = eventDateTime.format('MMMM D, YYYY, h:mm A');  // e.g. December 8, 2019, 3:00 PM
+      const dateIconMonth = eventDateTime.format('MMM');  // e.g. Dec
+      const dateIconDay = eventDateTime.format('D');  // e.g. 8
+
+      let locationCityState;
+      let locationName = '';
+      let cleanedDescription = description.replaceAll('<html-blob>', '').replaceAll('<\/html-blob>', '').replaceAll('\n', '<br>');
+
+      const doesDescriptionBeginWithCityState = cleanedDescription.match(/^([a-zA-Z0-9- ]+, [A-Z]{2})(?: |<br>)/);  // e.g. Seattle, WA  e.g. Methuen, MA   e.g. Mercer Island, WA
+      if (doesDescriptionBeginWithCityState) {
+        locationCityState = doesDescriptionBeginWithCityState[1];
+        locationName = location.split(',')[0];
+      } else {
+        locationCityState = location;  // accommodate legacy formatting convention in our older calendar meetings
+        locationName = location;
+      }
+
+      if (doesDescriptionBeginWithCityState) {
+        cleanedDescription = cleanedDescription.replace(/^([a-zA-Z0-9- ]+, [A-Z]{2})(?: |<br>)/, '');
+        cleanedDescription = cleanedDescription.replace(/(?:<a href=".+?">)?\b(https?:\/\/\S+?)(?:<\/a>| |<br>)/, '<a href="$1">More Information<\/a><br/>');
+        cleanedDescription = `${locationCityState}<br/>${cleanedDescription}`;
+      }
+
+      if (eventDateTime > currentDateTime) {
+        return `
+            <table>
+              <tr>
+                <td id="date">
+                  <h3>${dateIconMonth}</h3>
+                  <h3>${dateIconDay}</h3>
+                </td>
+                <td>
+                  <b style="color:#fff">${eventDateTimeDisplay}<br />
+                  ${locationName}<\/b><br />${cleanedDescription}
+                </td>
+              </tr>
+              </table>
+          `;
+      }
+    };
+
+    function format(events) {
+      let upcomingPerformancesContent = [];
+
+      events.forEach((event) => {
+        const description = event.description;
+        const eventDateTime = moment(event.start.dateTime);
+        upcomingPerformancesContent.push(template(event.id, description, eventDateTime, event.location));
+      });
+
+      upcomingPerformancesContent = upcomingPerformancesContent.join("<br /><br /> <hr /> <br />");
+
+      if (upcomingPerformancesContent) {
+        upcomingPerformancesContent += "<br /><br /><br />";
+      }
+      return upcomingPerformancesContent;
+    };
+
+    async function getCalendarEvents () {
+      let events;
+      try {
+        const calendarId = 't4gvg2pkc00vf9s1o0ch756lu8@group.calendar.google.com';  // 5docta7e484kuv6vb6f41qetfg@group.calendar.google.com';
+        const myKey = 'AIzaSyCrP0rpUyRpb5JWFrhBqyqweL9D3JafMcQ'; // 'AIzaSyDdbu7SXbBwycepSAWB5bEPqmKThnTSQ3U';
+        console.log(currentDateTime.toISOString());
+        const url = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?key=${myKey}&orderBy=startTime&singleEvents=True&timeMin=${currentDateTime.toISOString()}`;
+
+        const apiCall = await fetch(url);
+        const apiResponse = await apiCall.json();
+        events = apiResponse.items;
+      } catch (error) {
+        console.log(error);
+      }
+
+      return events.reverse();
+    }
+
+    getCalendarEvents().then((events) => {
+      const upcomingPerformancesContent = format(events);
+      document.getElementById('upcoming_performances_content').textContent = '';
+      document.getElementById('upcoming_performances_content').insertAdjacentHTML('afterend', upcomingPerformancesContent);
+    });
+    //]]>
+  </script>
 </head>
 
 <body>
@@ -71,6 +162,7 @@
       <div class="c3">
         <h2><b class="c2">U</b>PCOMING <b class="c2">C</b>ONCERTS</h2>
       </div><br />
+      <span id="upcoming_performances_content"></span>
 
       <div class="c3">
         <h2><b class="c2">T</b>HE <b class="c2">L</b>IVE <b class="c2">M</b>USIC <b class="c2">P</b>ROJECT</h2>
