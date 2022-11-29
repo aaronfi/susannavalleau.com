@@ -92,7 +92,7 @@
         const eventDateTime = moment(event.start.dateTime);
 
         if (eventDateTime > currentDateTime) {
-          upcomingPerformancesContent.push(template(event.id, description, eventDateTime, event.location));
+          upcomingPerformancesContent.unshift(template(event.id, description, eventDateTime, event.location));
         } else {
           let content = template(event.id, description, eventDateTime, event.location);
 

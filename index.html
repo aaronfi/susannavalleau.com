@@ -75,7 +75,7 @@
       events.forEach((event) => {
         const description = event.description;
         const eventDateTime = moment(event.start.dateTime);
-        upcomingPerformancesContent.push(template(event.id, description, eventDateTime, event.location));
+        upcomingPerformancesContent.unshift(template(event.id, description, eventDateTime, event.location));
       });
 
       upcomingPerformancesContent = upcomingPerformancesContent.join("<br /><br /> <hr /> <br />");
